@@ -10,19 +10,21 @@ Synthesizer(DDS) of Analog Devices(AD) with SPI via FT232R BitBang Device.
 
 ## Software
 
- * libftdi.rb
+ * libftdi-ruby
 
 ## Hardware
 
  * FT232RL device
  * DDS Board
 
-# Preparation
+# How to run
+
+## Preparation
 
     $ gem install libftdi-ruby
   	$ sudo kextunload /System/Library/Extensions/FTDIUSBSerialDriver.kext
 
-# How to run
+## Execution
 
   	$ ./ddsbase.rb 10e6
 
