@@ -73,6 +73,14 @@ class SPIDevice
     set_bit(@pins[:cs], true) if @pins[:cs]
   end
 
+  def assert_reset
+    set_bit(@pins[:reset], true) if @pins[:reset]
+  end
+
+  def negate_reset
+    set_bit(@pins[:reset], false) if @pins[:reset]
+  end
+
   def assert_ioupdate
     set_bit(@pins[:ioupdate], true)
   end
@@ -220,6 +228,7 @@ class AD9859 < SPIDevice
     negate_cs
     negate_ioupdate
     negate_sclk
+    negate_reset
   end
 
   def setup
