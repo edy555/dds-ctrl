@@ -62,8 +62,6 @@ class SPIDevice:
 		i = 0
 		while bits > 0:
 			byte = data[i]
-			if isinstance(byte, str):
-				byte = struct.unpack(">B", byte)[0]
 			mask = 1 << 7
 			while mask > 0 and bits > 0:
 				self.send_bit((byte & mask) != 0)
@@ -86,19 +84,19 @@ class AD9859(SPIDevice):
 	FTW0 = 0x04
 	POW0 = 0x05
 	
-	CFR1_DEF = [ ["unused", 5],
-               ["load_apr", 1],
-               ["osk_enable", 1],
-               ["auto_osk_keying", 1],
-               ["auto_sync", 1],
-               ["software_manual_sync", 1],
-               ["unused", 6],
-               ["unused", 2],
-               ["autoclrphaseaccum", 1],
-               ["enable_sine_out", 1],
-               ["unused", 1],
-               ["clearphaseaccum", 1],
-               ["sdio_input_only", 1],
+	CFR1_DEF = ( ("unused", 5),
+               ("load_apr", 1),
+               ("osk_enable", 1),
+               ("auto_osk_keying", 1),
+               ("auto_sync", 1),
+               ("software_manual_sync", 1),
+               ("unused", 6),
+               ("unused", 2),
+               ("autoclrphaseaccum", 1),
+               ("enable_sine_out", 1),
+               ("unused", 1),
+               ("clearphaseaccum", 1),
+               ("sdio_input_only", 1),
 			   "lsb_first",
                "digital_powerdown",
                "unused",
@@ -107,26 +105,26 @@ class AD9859(SPIDevice):
                "external_powerdownmode",
                "unused",
                "syncout_disable",
-               "unused" ]
+               "unused" )
 
-	CFR2_DEF = [ ["unused", 8],
-				 ["unused", 4],
-				 ["high_speed_sync_enable", 1],
-				 ["hardware_manual_sync_enable", 1],
-				 ["crystal_out_pin_active", 1],
-				 ["unused", 1],
-				 ["refclk_multiplier", 5],
-				 ["vco_range", 1],
-				 ["charge_pump_current", 2] ]
+	CFR2_DEF = ( ("unused", 8),
+				 ("unused", 4),
+				 ("high_speed_sync_enable", 1),
+				 ("hardware_manual_sync_enable", 1),
+				 ("crystal_out_pin_active", 1),
+				 ("unused", 1),
+				 ("refclk_multiplier", 5),
+				 ("vco_range", 1),
+				 ("charge_pump_current", 2) )
 	
-	def config_compile(self, bitdef):
+	def get_config_reg(self, bitdef):
 		conf = self.conf
-		ary = []
+		ary = bytearray()
 		byte = 0
 		i = 8
 		for k in bitdef:
 			s = 1
-			if isinstance(k, list):
+			if not isinstance(k, str):
 				s = k[1]
 				k = k[0]
 			i -= s
@@ -154,8 +152,8 @@ class AD9859(SPIDevice):
 
 	def setup(self):
 		self.assert_cs()
-		cfr1 = self.config_compile(AD9859.CFR1_DEF)
-		cfr2 = self.config_compile(AD9859.CFR2_DEF)
+		cfr1 = self.get_config_reg(AD9859.CFR1_DEF)
+		cfr2 = self.get_config_reg(AD9859.CFR2_DEF)
 		self.write_reg(AD9859.CFR1, cfr1, 32)
 		self.write_reg(AD9859.CFR2, cfr2, 24)
 		self.negate_cs()
@@ -165,10 +163,12 @@ class AD9859(SPIDevice):
 		self.send_array(data, bits)
 
 	def setFTW0(self, ftw0):
-		self.write_reg(AD9859.FTW0, struct.pack('>L', int(ftw0)), 32)
+		reg = bytearray(struct.pack('>L', int(ftw0)))
+		self.write_reg(AD9859.FTW0, reg, 32)
 
 	def setASF(self, ampl):
-		self.write_reg(AD9859.ASF, struct.pack('>L', ampl & 0x3fff), 16)
+		reg = bytearray(struct.pack('>L', int(ampl) & 0x3fff))
+		self.write_reg(AD9859.ASF, reg, 16)
 
 	def set_frequency(self, freq):
 		self.assert_cs()
