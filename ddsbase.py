@@ -4,10 +4,10 @@
 # pip install pylibftdi
 # refer /Library/Python/2.6/site-packages/pylibftdi
 
-import sys
+import sys, time
 from optparse import OptionParser
 from pylibftdi import BitBangDevice
-from dds import AD9859
+from dds import AD9859, BitBangInterface
 
 usage = "usage: %prog [options] [freq(Hz)] [amplitude(db)]"
 parser = OptionParser(usage=usage)
@@ -39,15 +39,19 @@ if options.verbose:
 	if ampl:
 		print "set amplitude %ddB" % ampl
 		
-with BitBangDevice(direction = 0xff) as bb:
+with BitBangDevice(direction = 0xff) as dev:
+	dev.baudrate = 115200
+	bb = BitBangInterface(dev)
 	dds = AD9859(bb, conf)
 	dds.reset()
 	dds.setup()
-	dds.set_frequency(freq)
-	#if ampl:
-	#	dds.set_amplitude(ampl)
-	dds.ioupdate()
-	
+	while True:
+		dds.set_frequency(freq)
+        #if ampl:
+		#	dds.set_amplitude(ampl)
+		dds.ioupdate()
+		time.sleep(0.2)
+		
 	# dds.send_byte(0x55)
 	# print dds.config_compile(dds.CFR1_DEF)
 	# print dds.config_compile(dds.CFR2_DEF)

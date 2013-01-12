@@ -1,21 +1,51 @@
 import struct
 
+class BitBangInterface:
+	def __init__(self, device):
+		self.device = device
+		self.last = None
+		self.buf = bytearray()
+		
+	def set_bit(self, bit, on):
+		if on:
+			if self.last:
+				value = self.last | (1<<bit)
+			else:
+				value = 1<<bit
+		else:
+			if self.last:
+				value = self.last & ~(1<<bit)
+			else:
+				value = ~(1<<bit)
+		self.buf.append(value)
+		self.last = value
+		# if on :
+		# 	self.bitbang.port |= 
+		# else:
+		# 	self.bitbang.port &= ~(1<<bit)
+
+	def flush(self):
+		#print self.buf
+		self.device.write(self.buf)
+		self.device.flush()
+		self.buf = bytearray()
+
 
 class SPIDevice:
 	def __init__(self, bb, pins, conf = {}):
 		self.bitbang = bb
 		self.pins = pins
-	
+			
 	def set_bit(self, bit, on):
 		if isinstance(bit, str):
 			bit = self.pins.get(bit)
 			if bit == None:
 				return
-		if on :
-			self.bitbang.port |= 1<<bit
-		else:
-			self.bitbang.port &= ~(1<<bit)
-	
+		self.bitbang.set_bit(bit, on)
+
+	def flush(self):
+		self.bitbang.flush()
+		
 	def assert_cs(self):
 		self.set_bit("cs", False)
 	
@@ -184,4 +214,4 @@ class AD9859(SPIDevice):
 
 	def ioupdate(self):
 		self.toggle_ioupdate()
-
+		self.flush()
