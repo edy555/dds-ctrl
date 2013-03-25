@@ -31,10 +31,13 @@ class vna_probe(gr.top_block):
 		##################################################
 		# Blocks
 		##################################################
+		self.gr_probe_ref = gr.probe_signal_f()
 		self.gr_probe_mag = gr.probe_signal_f()
 		self.gr_probe_arg = gr.probe_signal_f()
+		self.gr_nlog10_ff_ref = gr.nlog10_ff(1, 1, 0)
 		self.gr_nlog10_ff_0 = gr.nlog10_ff(1, 1, 0)
 		self.gr_divide_xx_0 = gr.divide_cc(1)
+		self.gr_complex_to_mag_ref = gr.complex_to_mag(1)
 		self.gr_complex_to_mag_0 = gr.complex_to_mag(1)
 		self.gr_complex_to_arg_0 = gr.complex_to_arg(1)
 		self.band_pass_filter_0_0 = gr.fir_filter_fcc(1, firdes.complex_band_pass(
@@ -49,12 +52,16 @@ class vna_probe(gr.top_block):
 		self.connect((self.band_pass_filter_0_0, 0), (self.gr_complex_to_mag_0, 0))
 		self.connect((self.gr_complex_to_mag_0, 0), (self.gr_nlog10_ff_0, 0))
 		self.connect((self.gr_divide_xx_0, 0), (self.gr_complex_to_arg_0, 0))
-		self.connect((self.band_pass_filter_0_0, 0), (self.gr_divide_xx_0, 1))
-		self.connect((self.band_pass_filter_0, 0), (self.gr_divide_xx_0, 0))
+		self.connect((self.band_pass_filter_0_0, 0), (self.gr_divide_xx_0, 0))
+		self.connect((self.band_pass_filter_0, 0), (self.gr_divide_xx_0, 1))
 		self.connect((self.audio_source_0, 1), (self.band_pass_filter_0_0, 0))
 		self.connect((self.audio_source_0, 0), (self.band_pass_filter_0, 0))
 		self.connect((self.gr_nlog10_ff_0, 0), (self.gr_probe_mag, 0))
 		self.connect((self.gr_complex_to_arg_0, 0), (self.gr_probe_arg, 0))
+
+		self.connect((self.band_pass_filter_0, 0), (self.gr_complex_to_mag_ref, 0))
+		self.connect((self.gr_complex_to_mag_ref, 0), (self.gr_nlog10_ff_ref, 0))
+		self.connect((self.gr_nlog10_ff_ref, 0), (self.gr_probe_ref, 0))
 
 	def get_signal_freq(self):
 		return self.signal_freq
@@ -99,7 +106,7 @@ if __name__ == '__main__':
 					  help="make lots of messages [default]")
 	parser.add_option("-m", "--mul", dest="mul", default=16,
 					  help="set PLL multiplier [default: %default]")
-	parser.add_option("-c", metavar="FREQ", dest="crystal", default=25e6,
+	parser.add_option("-x", metavar="FREQ", dest="crystal", default=25e6,
 					  help="set crystal frequency to FREQ [default: %default]")
 	parser.add_option("-s", metavar="FREQ", dest="start", type="float", default=0e6,
 					  help="sweep start FREQ [default: %default]")
@@ -109,12 +116,17 @@ if __name__ == '__main__':
 					  help="sweep STEPs [default: %default]")
 	parser.add_option("-i", metavar="SEC", dest="interval", type="float", default=0.1,
 					  help="set measuring interval [default: %default]")
+	parser.add_option("-t", action="store_true", dest="thru", default=False,
+					  help="select thrugh signal(s21) [default: %default]")
+	parser.add_option("-c", metavar="CONF", dest="conf", type="int", default=0,
+					  help="force select dds configuration [default: 0 (auto)]")
 	(options, args) = parser.parse_args()
 	tb = vna_probe()
 	runner = top_block_runner(tb)
 	with BitBangDevice(direction=0xff, sync=False) as dev:
 		v = vna(dev)
-		v.reset()
+		v.select_signal(options.thru)
+		v.select_conf(options.conf)
 		start = options.start
 		end = options.end
 		step = options.step
@@ -125,5 +137,6 @@ if __name__ == '__main__':
 			v.set_frequency(freq)
 			time.sleep(options.interval)
 			print "%d" % freq,
-			print "%f" % (tb.gr_probe_arg.level() / 3.14 + 1),
-			print "%f" % (tb.gr_probe_mag.level() + 4)
+			print "%f" % (tb.gr_probe_arg.level()),
+			print "%f" % (tb.gr_probe_mag.level() + 4),
+			print "%f" % (tb.gr_probe_ref.level() + 4)

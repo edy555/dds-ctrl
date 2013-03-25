@@ -17,7 +17,7 @@ class BitBangInterface:
 				value = self.last & ~(1<<bit)
 			else:
 				value = ~(1<<bit)
-		self.buf.append(value)
+		self.buf.append(value & 0xff)
 		self.last = value
 		# if on :
 		# 	self.bitbang.port |= 
@@ -193,11 +193,11 @@ class AD9859(SPIDevice):
 		self.send_array(data, bits)
 
 	def setFTW0(self, ftw0):
-		reg = bytearray(struct.pack('>L', int(ftw0)))
+		reg = bytearray(struct.pack('>L', long(ftw0) & 0xffffffffL))
 		self.write_reg(AD9859.FTW0, reg, 32)
 
 	def setASF(self, ampl):
-		reg = bytearray(struct.pack('>L', int(ampl) & 0x3fff))
+		reg = bytearray(struct.pack('>H', long(ampl) & 0x3fff))
 		self.write_reg(AD9859.ASF, reg, 16)
 
 	def set_frequency(self, freq):

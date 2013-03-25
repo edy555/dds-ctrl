@@ -1,11 +1,9 @@
 #!/bin/sh
 gnuplot=/Applications/gnuplot.app/bin/gnuplot
 
-./vna_probe.py $* | grep -v '^Using' > vnaplot.dat
-$gnuplot <<EOC && open vnaplot.pdf
+./vna_probe.py $* | grep -v '^Using' > vnaplot.dat && $gnuplot <<EOC && open vnaplot.pdf
 set terminal pdf
 set output 'vnaplot.pdf'
 set style data linespoints
-plot [] [0:3] 'vnaplot.dat' title 'ARG', 'vnaplot.dat' using 1:3 title 'MAG'
+plot [] [-3.14:3.14] 'vnaplot.dat' title 'ARG', 'vnaplot.dat' using 1:3 title 'MAG', 'vnaplot.dat' using 1:4 title 'REF'
 EOC
-
